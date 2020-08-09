@@ -1,0 +1,56 @@
+- hosts: k8master
+  become: yes
+  tasks:
+
+     - name: get join command
+       shell: kubeadm token create --print-join-command
+       register: join_command
+
+     - name: Copy join command to local file
+       copy: 
+          dest: "join" 
+          content: "{{ join_command.stdout_lines[0] }}"
+       become: false
+       delegate_to: localhost
+     - name: Copy admin.conf to local
+       fetch: 
+          src: /etc/kubernetes/admin.conf
+          dest: ./
+          flat: yes
+  handlers:
+     - name: docker status
+       service: name=docker state=started
+- hosts: k8workers
+  become: yes
+  tasks:
+     - name: Create Folder
+       file:
+            path: /root/.kube
+            owner: root
+            group: root
+            mode: '0755'
+            state: directory
+     - name: Copying admin.conf file
+       copy:
+            src: /k8cluster/centos/playbooks/admin.conf
+            dest: /root/.kube/config
+            owner: root
+            group: root
+            mode: '0644'
+     - name: Copying joicommand.sh
+       copy:
+            src: "join"
+            dest: /tmp/join-command.sh
+            owner: root
+            group: root
+            mode: '0777'
+     - name: Install Network Add-on
+       shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/2140ac876ef134e0ed5af15c65e414cf26827915/Documentation/kube-flannel.yml
+       register: fannel
+     - debug:
+           var: fannel
+     - name: join cluster
+       command: sh /tmp/join-command.sh
+  handlers:
+      - name: docker status
+        service: name=docker state=started

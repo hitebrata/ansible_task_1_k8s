@@ -1,0 +1,6 @@
+- hosts: all
+  tasks:
+        - name: Put SELinux in permissive mode.
+          selinux:
+             policy: targeted
+             state: disabled

@@ -1,0 +1,15 @@
+- name: Copy script from local to remote machine
+  hosts: k8master
+  tasks:
+    - name: Copy  script to remote_machine
+      copy: 
+        src: apache-deploy.yml
+        dest: /home/apache-deploy.yml
+        owner: root
+        group: root
+        mode: '755'
+    - name: Execute script on remote_machine
+      command: kubectl apply -f /home/apache-deploy.yml
+      register: webdeploy
+    - debug:
+         var: webdeploy

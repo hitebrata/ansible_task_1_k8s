@@ -1,0 +1,28 @@
+---
+- hosts: k8master
+  become: yes 
+  tasks:
+  - include_vars: env_variables.yml
+  - name: Pulling images required for setting up a Kubernetes cluster
+    shell: kubeadm config images pull
+
+  - name: Initializing Kubernetes cluster
+    shell: kubeadm init  --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=192.168.60.140
+    register: kubeinit
+  - debug:
+       var: kubeinit
+  - name: Create Folder
+    file: 
+       path: /root/.kube
+       owner: root
+       group: root 
+       mode: '0755'
+       state: directory
+  - name: Copying required files
+    copy:
+      src: /etc/kubernetes/admin.conf
+      dest: /root/.kube/config
+      remote_src: yes
+      owner: root
+      group: root
+      mode: '0644'
